@@ -1,197 +1,127 @@
-#include <iostream>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include<iostream>
+#include<glad/glad.h>
+#include<GLFW/glfw3.h>
+#include<stb/stb_image.h>
 
-// Déclaration des paramètres de la fenêtre
-const int WIDTH = 800;
-const int HEIGHT = 800;
-
-// definition du vertex shader en GL shding language (GLSL)
-const char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"}\0";
-
-// definition du fragment shader
-const char* fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"void main()\n"
-"{\n"
-"	FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-"}\0"; 
+#include"shaderClass.h"
+#include"VAO.h"
+#include"VBO.h"
+#include"EBO.h"
 
 
 
-int main() {
+// Vertices coordinates
+GLfloat vertices[] =
+{ //     COORDINATES     /        COLORS      /   TexCoord  //
+	-0.5f, -0.5f, 0.0f,     1.0f, 0.0f, 0.0f,	0.0f, 0.0f, // Lower left corner
+	-0.5f,  0.5f, 0.0f,     0.0f, 1.0f, 0.0f,	0.0f, 1.0f, // Upper left corner
+	 0.5f,  0.5f, 0.0f,     0.0f, 0.0f, 1.0f,	1.0f, 1.0f, // Upper right corner
+	 0.5f, -0.5f, 0.0f,     1.0f, 1.0f, 1.0f,	1.0f, 0.0f  // Lower right corner
+};
 
-	// Initialisation de GLFW
+// Indices for vertices order
+GLuint indices[] =
+{
+	0, 2, 1, // Upper triangle
+	0, 3, 2 // Lower triangle
+};
+
+
+
+int main()
+{
+	// Initialize GLFW
 	glfwInit();
 
-	// Indiquer a GLFW la version de OpenGL utilisé
+	// Tell GLFW what version of OpenGL we are using 
+	// In this case we are using OpenGL 3.3
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	// Tell GLFW we are using the CORE profile
+	// So that means we only have the modern functions
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	// Création de la fenêtre
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "game engine", NULL, NULL);
-	
-	// Détection d'erreur
-	if (window == NULL) {
-		std::cout << "Failed to create window" << "/n";
+	// Create a GLFWwindow object of 800 by 800 pixels, naming it "YoutubeOpenGL"
+	GLFWwindow* window = glfwCreateWindow(800, 800, "YoutubeOpenGL", NULL, NULL);
+	// Error check if the window fails to create
+	if (window == NULL)
+	{
+		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
-
+	// Introduce the window into the current context
 	glfwMakeContextCurrent(window);
 
-
-
-	// OPENGL
-
-	// initialiser openGL
+	//Load GLAD so it configures OpenGL
 	gladLoadGL();
+	// Specify the viewport of OpenGL in the Window
+	// In this case the viewport goes from x = 0, y = 0, to x = 800, y = 800
+	glViewport(0, 0, 800, 800);
 
-	// initalise la fenetre de rafraichissement
-	glViewport(0, 0, WIDTH, HEIGHT);
 
 
-	// VERTEX SHADER
+	// Generates Shader object using shaders defualt.vert and default.frag
+	Shader shaderProgram("default.vert", "default.frag");
 
-	// creation d'un objet shader avec son ID
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 
-	// relier le nouvel objet avec le code source et le compiler
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
 
-	// verification si la compilation est reussi
-	int  success;
-	char infoLog[512];
+	// Generates Vertex Array Object and binds it
+	VAO VAO1;
+	VAO1.Bind();
 
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+	// Generates Vertex Buffer Object and links it to vertices
+	VBO VBO1(vertices, sizeof(vertices));
+	// Generates Element Buffer Object and links it to indices
+	EBO EBO1(indices, sizeof(indices));
 
-	if (!success)
+	// Links VBO attributes such as coordinates and colors to VAO
+	VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+	VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	// Unbind all to prevent accidentally modifying them
+	VAO1.Unbind();
+	VBO1.Unbind();
+	EBO1.Unbind();
+
+	// Gets ID of uniform called "scale"
+	GLuint uniID = glGetUniformLocation(shaderProgram.ID, "scale");
+
+	int widthImg, heightImg, numColCh;
+	unsigned char* bytes = stbi_load("03c06758fa39ced00f56ee5652f03e6b-3761257969.jpeg", &widthImg, &heightImg, &numColCh, 0)
+
+
+
+	// Main while loop
+	while (!glfwWindowShouldClose(window))
 	{
-		// Recuperer le message d'erreur
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-
-	// FRAGMENT SHADER
-
-	// Creation d'un objet shader avec son ID
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-	// relier le nouvel objet avec le code source et le compiler
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-
-
-	// verification si la compilation est reussi
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-
-	if (!success)
-	{
-		// Recuperer le message d'erreur
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-
-
-	// SHADER PROGRAM
-
-	// creer l'objet GL pour le program de shader
-	GLuint shaderProgram = glCreateProgram();
-
-	// attacher les shaders avec le program
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-
-	// construire le program
-	glLinkProgram(shaderProgram);
-
-	// verification que le program link bien
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
-	}
-
-	// On enleve les anciens shader etant donne qu'on les a deja compilé et linker au program
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-
-	// VERTEX INPUT
-
-	// definition d'un triangle
-	GLfloat vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		-0.5f,  0.5f, 0.0f,
-		 0.5f,  0.5f, 0.0f
-
-
-	};
-
-	GLuint indices[] = {
-		0, 1, 2,
-		1, 2, 3
-	};
-
-	// Vertex Array et Buffer Objects VAO, VBO
-
-	GLuint VAO, VBO , EBO;
-
-	// Generer un VAO et un VBO associés aux objets instanciés plus haut
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-
-	// Relier le VAO au vertex array du GPU
-	glBindVertexArray(VAO);
-
-	// Relier le VBO au vertex buffer du GPU
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // Lier vertices au VBO
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	// Boucle pour garder la fenêtre ouverte
-	while (!glfwWindowShouldClose(window)) {
-
-
+		// Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		// Clean the back buffer and assign the new color to it
 		glClear(GL_COLOR_BUFFER_BIT);
-		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO);
+		// Tell OpenGL which Shader Program we want to use
+		shaderProgram.Activate();
+		// Assigns a value to the uniform; NOTE: Must always be done after activating the Shader Program
+		glUniform1f(uniID, 0.5f);
+		// Bind the VAO so OpenGL knows to use it
+		VAO1.Bind();
+		// Draw primitives, number of indices, datatype of indices, index of indices
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
-
+		// Take care of all GLFW events
 		glfwPollEvents();
 	}
 
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
-	glDeleteProgram(shaderProgram);
 
-	// Terminaison de la fenêtre et de GLFW
+
+	// Delete all the objects we've created
+	VAO1.Delete();
+	VBO1.Delete();
+	EBO1.Delete();
+	shaderProgram.Delete();
+	// Delete window before ending the program
 	glfwDestroyWindow(window);
+	// Terminate GLFW before ending the program
 	glfwTerminate();
 	return 0;
-
 }
